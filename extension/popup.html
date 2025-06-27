@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meeting Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="header">
+      <h1 class="title">MEETING ASSISTANT</h1>
+      <div class="status-indicator" id="status-indicator">
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">READY</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Recording Section -->
+      <div class="section" id="recording-section">
+        <div class="section-title">RECORDING</div>
+        <div class="meeting-info" id="meeting-info">
+          <div class="meeting-title" id="meeting-title">No meeting detected</div>
+          <div class="meeting-details" id="meeting-details">
+            <span id="participant-count">0 participants</span>
+            <span id="duration" style="display: none;">00:00</span>
+          </div>
+        </div>
+        
+        <div class="controls">
+          <button class="btn btn-primary" id="record-btn">START RECORDING</button>
+          <button class="btn btn-secondary" id="stop-btn" style="display: none;">STOP RECORDING</button>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="section">
+        <div class="section-title">SETTINGS</div>
+        <div class="setting-item">
+          <label class="checkbox-container">
+            <input type="checkbox" id="auto-record">
+            <span class="checkmark"></span>
+            <span class="label-text">Auto-record meetings</span>
+          </label>
+        </div>
+        
+        <div class="setting-item">
+          <label for="api-url" class="label-text">API URL:</label>
+          <input type="text" id="api-url" class="input-field" placeholder="http://localhost:3000">
+        </div>
+      </div>
+
+      <!-- Actions Section -->
+      <div class="section">
+        <div class="section-title">ACTIONS</div>
+        <div class="action-buttons">
+          <button class="btn btn-outline" id="open-dashboard">OPEN DASHBOARD</button>
+          <button class="btn btn-outline" id="view-history">VIEW HISTORY</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-text">Free • No Sign-up Required</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+/* Popup Styles - Minimal Neubrutalism (No Colors) */
+/* Agent 2: Chrome Extension Specialist */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ffffff;
+  color: #000000;
+  width: 400px;
+  min-height: 500px;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.header {
+  background: #000000;
+  color: #ffffff;
+  padding: 20px;
+  border-bottom: 4px solid #000000;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.status-dot.recording {
+  background: #666666;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.status-text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 4px;
+}
+
+/* Meeting Info */
+.meeting-info {
+  background: #f5f5f5;
+  border: 3px solid #000000;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.meeting-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.meeting-details {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  gap: 16px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 12px 20px;
+  border: 3px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.btn:active {
+  transform: translate(0px, 0px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #000000;
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Settings */
+.setting-item {
+  margin-bottom: 16px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkbox-container input {
+  display: none;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #000000;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-container input:checked + .checkmark::after {
+  content: '✓';
+  font-size: 14px;
+  font-weight: 900;
+  color: #000000;
+}
+
+.label-text {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.input-field:focus {
+  outline: none;
+  border-width: 3px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-buttons .btn {
+  flex: none;
+}
+
+/* Footer */
+.footer {
+  background: #f5f5f5;
+  border-top: 2px solid #000000;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666666;
+}
+
+/* Responsive */
+@media (max-width: 350px) {
+  body {
+    width: 350px;
+  }
+  
+  .controls {
+    flex-direction: column;
+  }
+}

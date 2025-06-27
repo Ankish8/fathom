@@ -1,0 +1,51 @@
+/* Content Styles - Injected into Google Meet */
+/* Agent 2: Chrome Extension Specialist */
+
+/* Recording indicator overlay */
+#meeting-assistant-indicator {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  width: 12px !important;
+  height: 12px !important;
+  background: #000000 !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  z-index: 10000 !important;
+  display: none !important;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.2) !important;
+  animation: recording-pulse 2s infinite !important;
+}
+
+@keyframes recording-pulse {
+  0%, 100% {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  50% {
+    opacity: 0.6 !important;
+    transform: scale(1.1) !important;
+  }
+}
+
+/* Optional: Subtle notification bar */
+.meeting-assistant-notification {
+  position: fixed !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  z-index: 9999 !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  display: none !important;
+}
+
+/* Hide from Google Meet's UI when needed */
+.meeting-assistant-hidden {
+  display: none !important;
+}

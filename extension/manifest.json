@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Meeting Assistant - Fathom Alternative",
+  "version": "1.0.0",
+  "description": "Record and transcribe Google Meet sessions with AI-powered summaries. Free alternative to Fathom.",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "scripting",
+    "tabCapture",
+    "notifications"
+  ],
+  
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "https://calendar.google.com/*",
+    "http://localhost:3000/*",
+    "https://your-domain.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Meeting Assistant"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://meet.google.com/*"]
+    }
+  ],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
