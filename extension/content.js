@@ -251,6 +251,10 @@ class MeetingDetector {
           sendResponse({ success: false, error: error.message });
         });
         return true; // Keep message channel open for async response
+      } else if (message.type === 'STOP_CONTENT_RECORDING') {
+        console.log('🔌 DEBUG: Stopping content script recording...');
+        this.stopRecording();
+        sendResponse({ success: true });
       }
       
       return true; // Keep the message channel open for async responses
@@ -259,37 +263,138 @@ class MeetingDetector {
 
   async startRecording() {
     try {
-      // Get audio stream from the tab
+      console.log('🔌 DEBUG: Content script starting recording...');
+      
+      // Request screen/audio capture with system audio
       const stream = await navigator.mediaDevices.getDisplayMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 48000
+          sampleRate: 48000,
+          systemAudio: 'include' // Include system audio if supported
         },
-        video: false
+        video: false // Only capture audio
       });
 
-      // Send stream to background script for processing
-      chrome.runtime.sendMessage({
-        type: 'START_RECORDING',
-        meetingData: this.meetingData,
-        streamId: stream.id
+      console.log('🔌 DEBUG: Got media stream:', stream);
+
+      // Set up MediaRecorder in content script
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
       });
 
+      this.audioChunks = [];
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        console.log('🔌 DEBUG: Audio data available:', event.data.size, 'bytes');
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        console.log('🔌 DEBUG: MediaRecorder stopped, processing audio...');
+        this.processRecordedAudio();
+      };
+
+      // Start recording
+      this.mediaRecorder.start(1000); // Collect data every second
       this.meetingData.isRecording = true;
+
+      // Show recording indicator
+      const indicator = document.getElementById('meeting-assistant-indicator');
+      if (indicator) {
+        indicator.style.display = 'block';
+        indicator.style.background = '#ff0000'; // Red dot when recording
+      }
+
+      console.log('🔌 DEBUG: Recording started successfully');
       return true;
     } catch (error) {
-      console.error('🔌 Recording failed:', error);
+      console.error('🔌 DEBUG: Recording failed:', error);
+      
+      // Show user-friendly error message
+      if (error.name === 'NotAllowedError') {
+        console.error('🔌 User denied screen sharing permission');
+      } else if (error.name === 'NotSupportedError') {
+        console.error('🔌 Screen sharing not supported in this browser');
+      }
+      
       return false;
     }
   }
 
   stopRecording() {
-    chrome.runtime.sendMessage({
-      type: 'STOP_RECORDING',
-      meetingData: this.meetingData
+    try {
+      console.log('🔌 DEBUG: Stopping content script recording...');
+      
+      if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+        this.mediaRecorder.stop();
+      }
+      
+      this.meetingData.isRecording = false;
+      
+      // Hide recording indicator
+      const indicator = document.getElementById('meeting-assistant-indicator');
+      if (indicator) {
+        indicator.style.display = 'none';
+      }
+      
+      // Notify background script
+      chrome.runtime.sendMessage({
+        type: 'STOP_RECORDING',
+        meetingData: this.meetingData
+      });
+      
+      console.log('🔌 DEBUG: Recording stopped');
+    } catch (error) {
+      console.error('🔌 DEBUG: Error stopping recording:', error);
+    }
+  }
+
+  async processRecordedAudio() {
+    try {
+      if (!this.audioChunks || this.audioChunks.length === 0) {
+        console.log('🔌 DEBUG: No audio data to process');
+        return;
+      }
+
+      console.log('🔌 DEBUG: Processing', this.audioChunks.length, 'audio chunks');
+
+      // Create audio blob
+      const audioBlob = new Blob(this.audioChunks, {
+        type: 'audio/webm;codecs=opus'
+      });
+
+      console.log('🔌 DEBUG: Created audio blob:', audioBlob.size, 'bytes');
+
+      // Convert to base64 for transmission
+      const audioBase64 = await this.blobToBase64(audioBlob);
+
+      // Send to background script for API processing
+      chrome.runtime.sendMessage({
+        type: 'PROCESS_AUDIO',
+        meetingData: this.meetingData,
+        audioData: audioBase64,
+        duration: Math.round((Date.now() - new Date(this.meetingData.startTime)) / 1000)
+      });
+
+      console.log('🔌 DEBUG: Audio sent to background script for processing');
+    } catch (error) {
+      console.error('🔌 DEBUG: Error processing recorded audio:', error);
+    }
+  }
+
+  async blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
-    this.meetingData.isRecording = false;
   }
 
   notifyExtension() {

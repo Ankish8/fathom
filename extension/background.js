@@ -52,6 +52,19 @@ class MeetingRecorder {
         case 'GET_RECORDING_STATE':
           sendResponse({ isRecording: this.isRecording });
           break;
+          
+        case 'PROCESS_AUDIO':
+          console.log('🔌 DEBUG: Processing audio from content script...');
+          this.processAudioFromContentScript(message)
+            .then(success => {
+              sendResponse({ success: success });
+            })
+            .catch(error => {
+              console.error('🔌 DEBUG: Audio processing error:', error);
+              sendResponse({ success: false, error: error.message });
+            });
+          return true; // Keep message channel open for async response
+          break;
       }
     });
   }
@@ -170,19 +183,10 @@ class MeetingRecorder {
 
   async captureTabAudio(tab) {
     try {
-      console.log('🔌 DEBUG: Starting audio capture...');
-      console.log('🔌 DEBUG: chrome.tabCapture available:', !!chrome.tabCapture);
+      console.log('🔌 DEBUG: Starting audio capture using content script approach...');
       
-      // Try tabCapture first (if available)
-      if (chrome.tabCapture && chrome.tabCapture.capture) {
-        console.log('🔌 DEBUG: Using chrome.tabCapture.capture...');
-        const stream = await this.tryTabCapture();
-        await this.setupRecording(stream);
-      } else {
-        console.log('🔌 DEBUG: tabCapture not available, using content script approach...');
-        // Alternative: Use content script to capture audio
-        await this.tryContentScriptCapture(tab);
-      }
+      // Use content script to capture audio (Manifest V3 compatible)
+      await this.tryContentScriptCapture(tab);
       
       console.log('🔌 DEBUG: Audio capture started successfully');
     } catch (error) {
@@ -191,72 +195,40 @@ class MeetingRecorder {
     }
   }
 
-  async tryTabCapture() {
+
+  async tryContentScriptCapture(tab) {
     return new Promise((resolve, reject) => {
-      chrome.tabCapture.capture({
-        audio: true,
-        video: false
-      }, (stream) => {
+      console.log('🔌 DEBUG: Requesting content script to start recording...');
+      
+      // Send message to content script to handle recording
+      chrome.tabs.sendMessage(tab.id, {
+        type: 'START_CONTENT_RECORDING'
+      }, (response) => {
         if (chrome.runtime.lastError) {
-          console.error('🔌 DEBUG: tabCapture error:', chrome.runtime.lastError.message);
+          console.error('🔌 DEBUG: Failed to communicate with content script:', chrome.runtime.lastError);
           reject(new Error(chrome.runtime.lastError.message));
+          return;
+        }
+        
+        if (response && response.success) {
+          console.log('🔌 DEBUG: Content script recording started');
+          // Set up recording state
+          this.currentRecording.mediaRecorder = { 
+            stop: () => {
+              console.log('🔌 DEBUG: Stopping content script recording');
+              chrome.tabs.sendMessage(tab.id, { type: 'STOP_CONTENT_RECORDING' });
+            },
+            state: 'recording'
+          };
+          resolve(true);
         } else {
-          resolve(stream);
+          console.error('🔌 DEBUG: Content script recording failed:', response?.error);
+          reject(new Error(response?.error || 'Content script recording failed'));
         }
       });
     });
   }
 
-  async tryContentScriptCapture(tab) {
-    console.log('🔌 DEBUG: Requesting content script to start recording...');
-    
-    // Send message to content script to handle recording
-    chrome.tabs.sendMessage(tab.id, {
-      type: 'START_CONTENT_RECORDING'
-    }, (response) => {
-      if (response && response.success) {
-        console.log('🔌 DEBUG: Content script recording started');
-        // Set up a mock recording state for now
-        this.currentRecording.mediaRecorder = { 
-          stop: () => console.log('Mock recording stopped'),
-          state: 'recording'
-        };
-      } else {
-        console.error('🔌 DEBUG: Content script recording failed');
-        throw new Error('Content script recording failed');
-      }
-    });
-  }
-
-  async setupRecording(stream) {
-    if (!stream) {
-      throw new Error('No audio stream available');
-    }
-
-    console.log('🔌 DEBUG: Setting up MediaRecorder...');
-
-    // Set up MediaRecorder
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=opus'
-    });
-
-    mediaRecorder.ondataavailable = (event) => {
-      console.log('🔌 DEBUG: Audio data available:', event.data.size, 'bytes');
-      if (event.data.size > 0) {
-        this.currentRecording.audioChunks.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = () => {
-      console.log('🔌 Audio recording stopped');
-      this.processRecordedAudio();
-    };
-
-    // Start recording
-    console.log('🔌 DEBUG: Starting MediaRecorder...');
-    mediaRecorder.start(1000);
-    this.currentRecording.mediaRecorder = mediaRecorder;
-  }
 
   async stopRecording(meetingData) {
     if (!this.isRecording) {
@@ -291,56 +263,6 @@ class MeetingRecorder {
     }
   }
 
-  async processRecordedAudio() {
-    if (!this.currentRecording || this.currentRecording.audioChunks.length === 0) {
-      console.log('🔌 No audio data to process');
-      return;
-    }
-
-    try {
-      console.log('🔌 Processing recorded audio...');
-      
-      // Combine audio chunks
-      const audioBlob = new Blob(this.currentRecording.audioChunks, {
-        type: 'audio/webm;codecs=opus'
-      });
-      
-      // Convert to base64 for API transmission
-      const audioBase64 = await this.blobToBase64(audioBlob);
-      
-      // Calculate duration
-      const duration = Math.round(
-        (new Date(this.currentRecording.endTime) - new Date(this.currentRecording.startTime)) / 1000
-      );
-      
-      // Send to web app API for processing
-      await this.sendToAPI({
-        meetingData: this.currentRecording.meetingData,
-        audioData: audioBase64,
-        duration: duration,
-        startTime: this.currentRecording.startTime,
-        endTime: this.currentRecording.endTime
-      });
-      
-    } catch (error) {
-      console.error('🔌 Error processing audio:', error);
-    } finally {
-      // Clean up
-      this.currentRecording = null;
-    }
-  }
-
-  async blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
 
   async createMeetingRecord(meetingData) {
     try {
@@ -366,6 +288,26 @@ class MeetingRecorder {
       }
     } catch (error) {
       console.error('🔌 Failed to create meeting record:', error);
+    }
+  }
+
+  async processAudioFromContentScript(message) {
+    try {
+      console.log('🔌 DEBUG: Processing audio from content script...');
+      
+      // Send to web app API for processing
+      await this.sendToAPI({
+        meetingData: message.meetingData,
+        audioData: message.audioData,
+        duration: message.duration,
+        startTime: message.meetingData.startTime,
+        endTime: new Date().toISOString()
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('🔌 Error processing audio from content script:', error);
+      throw error;
     }
   }
 
